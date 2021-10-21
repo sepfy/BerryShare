@@ -1,0 +1,6 @@
+[submodule "third_party/pear"]
+	path = third_party/pear
+	url = https://github.com/sepfy/pear/
+[submodule "third_party/userland"]
+	path = third_party/userland
+	url = https://github.com/raspberrypi/userland.git
