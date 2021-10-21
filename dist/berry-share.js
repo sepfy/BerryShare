@@ -21,13 +21,13 @@ class BerryShare {
     /* + "/xxx" bit is for IE10 workaround */
     this.wsEndpoint =  pcol + u[0];
     this.stunUrl = 'stun:' + u[0].split(':')[0] + ':3478';
-    this.name = randomAnimal();
+    this.castingName = randomAnimal();
   }
 
 
   webrtcConnect() {
 
-    let pc = new RTCPeerConnection({
+    this.pc = new RTCPeerConnection({
       iceServers: [{urls: this.stunUrl}]
     });
 
@@ -35,28 +35,35 @@ class BerryShare {
       console.log(msg);
     };
 
-    pc.oniceconnectionstatechange = e => log(pc.iceConnectionState);
+    this.pc.oniceconnectionstatechange = e => log(this.pc.iceConnectionState);
 
-    pc.onicecandidate = event => {
+    this.pc.onicecandidate = event => {
       if(event.candidate === null) {
-        console.log(btoa(pc.localDescription.sdp));
-        let offer = '{"type": "offer", "sdp":"' + btoa(pc.localDescription.sdp) + '", "name": "' + this.name + '"}';
+
+	let sdp = this.pc.localDescription.sdp;
+console.log(sdp);
+        let offer = '{"type": "offer", "sdp":"' + btoa(sdp) + '", "name": "' + this.castingName + '"}';
         this.ws.send(offer);
+        document.getElementById('info').innerHTML = 'BerryShare: Prepare to cast';
       }
     }
 
     navigator.mediaDevices.getDisplayMedia({ video: true, audio: false })
       .then(stream => {
-        stream.getTracks().forEach(track => pc.addTrack(track, stream));
-        pc.createOffer().then(d => pc.setLocalDescription(d)).catch(log)
+        stream.getTracks().forEach(track => {
+	  this.pc.addTrack(track, stream);
+          track.onended = () => {
+            this.ws.close();
+	  }
+	});
+        this.pc.createOffer().then(d => this.pc.setLocalDescription(d)).catch(log)
       }).catch(log);
 
   }
 
-
   wsOpen() {
     document.getElementById('info').innerHTML = 'BerryShare: Connected';
-    document.getElementById('name').innerHTML = 'Your name: ' + this.name;
+    document.getElementById('name').innerHTML = 'Your name: ' + this.castingName;
   }
 
   wsOnmessage(msg) {
@@ -68,7 +75,7 @@ class BerryShare {
         this.webrtcConnect();
       }
       else {
-        if(data.name == this.castingName) {
+        if(data.castingName == this.castingName) {
           document.getElementById('info').innerHTML = 'BerryShare: Casting';
         }
         else {
@@ -77,8 +84,12 @@ class BerryShare {
       }
     }
     else if(data.type == "answer") {
-      console.log(data.sdp);
-
+      try {
+        this.pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(atob(data.sdp))));
+      }
+      catch (e) {
+        alert(e);
+      }
     }
   }
 

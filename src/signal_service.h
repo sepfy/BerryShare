@@ -5,7 +5,7 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
-#include <set>
+#include <map>
 #include <websocketpp/config/asio.hpp>
 #include <websocketpp/server.hpp>
 
@@ -27,8 +27,8 @@ class SignalService {
   
  private:
 
-  typedef std::set<connection_hdl, std::owner_less<connection_hdl>> con_list;
-
+  typedef std::map<connection_hdl, std::string, std::owner_less<connection_hdl>> con_list;
+  
   void OnClose(connection_hdl hdl);
   void OnOpen(connection_hdl hdl);
   void OnHttp(connection_hdl hdl);

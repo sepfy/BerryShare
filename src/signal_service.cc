@@ -4,6 +4,9 @@
 #include <set>
 #include <websocketpp/config/asio.hpp>
 #include <websocketpp/server.hpp>
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
 
 #include "signal_service.h"
 
@@ -24,11 +27,15 @@ SignalService::SignalService(std::shared_ptr<BerryShare> &berry_share) {
 }
 
 void SignalService::OnOpen(connection_hdl hdl) {
-  connections_.insert(hdl);
+  connections_[hdl] = "";
   endpoint_.send(hdl, berry_share_->GetStatus(), websocketpp::frame::opcode::text);
 }
 
 void SignalService::OnClose(connection_hdl hdl) {
+  printf("Close %s\n", connections_[hdl].c_str());
+  if(connections_[hdl] == berry_share_->casting_name()) {
+    berry_share_->StopCasting();
+  }
   connections_.erase(hdl);
 }
 
@@ -45,9 +52,12 @@ void SignalService::OnMessage(connection_hdl hdl, websocketpp::config::asio::mes
   auto response = berry_share_->Request(msg->get_payload());
   endpoint_.send(hdl, response, websocketpp::frame::opcode::text);
 
+  auto j = json::parse(msg->get_payload());
+  connections_[hdl] = j["name"];
+
   auto status = berry_share_->GetStatus();
   for(auto it : connections_) {
-    endpoint_.send(it, status, websocketpp::frame::opcode::text);
+    endpoint_.send(it.first, status, websocketpp::frame::opcode::text);
   }
 
 }
