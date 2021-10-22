@@ -24,7 +24,7 @@ std::string BerryShare::Request(std::string info) {
   std::cout << info << "\n";
   if(j["type"] == "offer" && is_available_ == true) {
     auto sdp = RequestCasting(j["sdp"]);
-    omx_player_.Init();
+    omx_player_.Play();
     json response;
     response["type"] = "answer";
     response["sdp"] = sdp;
@@ -38,7 +38,7 @@ std::string BerryShare::Request(std::string info) {
 
 void BerryShare::StopCasting() {
   is_available_ = true;
-  omx_player_.Deinit();
+  omx_player_.Stop();
 }
 
 std::string BerryShare::RequestCasting(std::string offer) {
@@ -67,10 +67,8 @@ void BerryShare::Init() {
 
 void BerryShare::OnIceconnectionstatechange(iceconnectionstate_t state, void *data) {
   BerryShare *berry_share = (BerryShare*)data;
-  printf("%d\n", state);
   if(state == FAILED) {
     printf("Disconnect with browser... Stop streaming\n");
-    berry_share->is_available_ = true; 
   }
 }
 
