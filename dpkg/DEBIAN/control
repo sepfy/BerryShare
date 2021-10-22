@@ -1,0 +1,9 @@
+Package: berry-share
+Version: 0.1.0
+Architecture: armhf
+Maintainer: Sepfy <sepfy95@gmail.com>
+Installed-Size: 16
+Depends: openssl
+Priority: optional
+Homepage: https://github.com/sepfy/BerryShare
+Description: Share your screen to Raspberry Pi

@@ -10,6 +10,10 @@ using json = nlohmann::json;
 
 #include "signal_service.h"
 
+const std::string kTlsKeyPath = "/etc/berry-share/key.pem"; 
+const std::string kTlsCertPath = "/etc/berry-share/cert.pem";
+const std::string kDocRoot = "/etc/berry-share/dist/";
+
 SignalService::SignalService(std::shared_ptr<BerryShare> &berry_share) {
 
   endpoint_.clear_access_channels(websocketpp::log::alevel::all);
@@ -42,8 +46,8 @@ void SignalService::OnClose(connection_hdl hdl) {
 websocketpp::lib::shared_ptr<ssl_context> SignalService::OnTlsInit(connection_hdl hdl) {
 
   auto ctx = websocketpp::lib::make_shared<ssl_context>(ssl_context::sslv23);
-  ctx->use_certificate_chain_file("cert.pem");
-  ctx->use_private_key_file("key.pem", ssl_context::pem);
+  ctx->use_certificate_chain_file(kTlsCertPath);
+  ctx->use_private_key_file(kTlsKeyPath, ssl_context::pem);
   return ctx;
 }
 
@@ -75,10 +79,10 @@ void SignalService::OnHttp(connection_hdl hdl) {
   //        "http request1: "+filename);
 
   if(filename == "/") {
-    filename = docroot_ + "index.html";
+    filename = kDocRoot + "index.html";
   }
   else {
-    filename = docroot_ + filename.substr(1);
+    filename = kDocRoot + filename.substr(1);
   }
 
   //m_endpoint.get_alog().write(websocketpp::log::alevel::app,

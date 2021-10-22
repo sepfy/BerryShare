@@ -1,0 +1,10 @@
+[Unit]
+Description=STUN for BerryShare
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/stund
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

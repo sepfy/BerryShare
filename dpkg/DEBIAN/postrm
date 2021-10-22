@@ -1,0 +1,5 @@
+#!/bin/bash
+
+CONFIG_PATH=/etc/berry-share
+
+rm -rf $CONFIG_PATH

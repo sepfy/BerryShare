@@ -37,8 +37,6 @@ class SignalService {
 
   con_list connections_;
   server endpoint_;
-  std::string docroot_ = "./dist/";
-
   std::shared_ptr<BerryShare> berry_share_;
 };
 
