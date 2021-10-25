@@ -3,7 +3,7 @@
 
 #include <memory>
 #include <string>
-#include "h264_depacketizer.h"
+#include "rtp_depacketizer.h"
 #include "omx_player.h"
 
 extern "C" {
@@ -29,7 +29,7 @@ class BerryShare {
 
   static void OnIceconnectionstatechange(iceconnectionstate_t state, void *data);
   static void OnIcecandidate(char *sdp, void *data);
-  static void OnTrack(uint8_t *packet, size_t bytes);
+  static void OnTrack(uint8_t *packet, size_t bytes, void *data);
 
   bool is_available_;
   std::string casting_name_;
@@ -40,6 +40,8 @@ class BerryShare {
   GMutex mutex_;
 
   OmxPlayer omx_player_;
+  RtpDepacketizer rtp_depacketizer_;
+
   peer_connection_t *peer_connection_;
 };
 

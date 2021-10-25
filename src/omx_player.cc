@@ -281,13 +281,11 @@ void* OmxPlayer::Playback(void *data) {
 #endif
  
   unsigned int data_len = 0;
-SPDLOG_INFO("");
   if(omx_player->Init() != -1) {
 
     OMX_BUFFERHEADERTYPE *buf;
     int port_settings_changed = 0;
     int first_packet = 1;
-SPDLOG_INFO("");
 
     while(omx_player->playback_) {
       if((buf = ilclient_get_input_buffer(omx_player->video_decode_, 130, 0)) == NULL) {

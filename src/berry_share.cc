@@ -7,8 +7,6 @@
 
 using json = nlohmann::json;
 
-rtp_decode_context_t *rtp_decode_context_;
-
 BerryShare::BerryShare() {
   is_available_ = true;
   sdp_ = NULL;
@@ -21,7 +19,6 @@ BerryShare::~BerryShare() {
 std::string BerryShare::Request(std::string info) {
 
   auto j = json::parse(info);
-  std::cout << info << "\n";
   if(j["type"] == "offer" && is_available_ == true) {
     auto sdp = RequestCasting(j["sdp"]);
     omx_player_.Play();
@@ -43,7 +40,6 @@ void BerryShare::StopCasting() {
 
 std::string BerryShare::RequestCasting(std::string offer) {
   
-  std::cout << offer << "\n";	
   char *answer = SetOffer((char*)offer.c_str(), NULL);
   return std::string(answer);
 }
@@ -60,8 +56,7 @@ std::string BerryShare::GetStatus() {
 void BerryShare::Init() {
 
   spdlog::set_pattern("[%H:%M:%S][%@] %v");
-  rtp_decode_context_ = create_rtp_decode_context();
-  rtp_decode_context_->omx_player = &omx_player_;
+  rtp_depacketizer_.set_omx_player(&omx_player_);
 }
 
 
@@ -84,9 +79,9 @@ void BerryShare::OnIcecandidate(char *sdp, void *data) {
 
 }
 
-void BerryShare::OnTrack(uint8_t *packet, size_t bytes) {
-
-  rtp_decode_frame(rtp_decode_context_, packet, bytes);
+void BerryShare::OnTrack(uint8_t *packet, size_t bytes, void *data) {
+  RtpDepacketizer *rtp_depacketizer = (RtpDepacketizer*)data;
+  rtp_depacketizer->Depacket(packet, bytes);
 }
 
 char* BerryShare::SetOffer(char *offer, void *data) {
@@ -97,7 +92,7 @@ char* BerryShare::SetOffer(char *offer, void *data) {
   peer_connection_add_stream(peer_connection_, "H264");
   transceiver_t transceiver = {.video = RECVONLY};
   peer_connection_add_transceiver(peer_connection_, transceiver);
-  peer_connection_set_on_track(peer_connection_, (void*)BerryShare::OnTrack, this);
+  peer_connection_set_on_track(peer_connection_, (void*)BerryShare::OnTrack, &rtp_depacketizer_);
   peer_connection_set_on_icecandidate(peer_connection_, (void*)BerryShare::OnIcecandidate, this);
   peer_connection_set_on_iceconnectionstatechange(peer_connection_, (void*)&BerryShare::OnIceconnectionstatechange, this);
   peer_connection_create_answer(peer_connection_);
