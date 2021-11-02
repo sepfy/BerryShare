@@ -25,4 +25,4 @@ link_directories(${CMAKE_SOURCE_DIR}/third_party/pear/third_party/libnice/buildd
 
 add_executable(berry-share ${SRCS})
 
-target_link_libraries(berry-share pear glib-2.0 ssl crypto nice srtp2 rtp boost_system pthread ilclient bcm_host vcos vcilcs vchiq_arm)
+target_link_libraries(berry-share pear glib-2.0 ssl crypto nice srtp2 rtp boost_system pthread ilclient bcm_host vcos vcilcs vchiq_arm asound)

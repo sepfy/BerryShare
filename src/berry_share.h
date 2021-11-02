@@ -4,7 +4,7 @@
 #include <memory>
 #include <string>
 #include "rtp_depacketizer.h"
-#include "omx_player.h"
+#include "media_player.h"
 
 extern "C" {
 #include "pear.h"
@@ -27,7 +27,7 @@ class BerryShare {
 
  private:
 
-  static void OnIceconnectionstatechange(iceconnectionstate_t state, void *data);
+  static void OnIceconnectionstatechange(IceConnectionState state, void *data);
   static void OnIcecandidate(char *sdp, void *data);
   static void OnTrack(uint8_t *packet, size_t bytes, void *data);
 
@@ -35,14 +35,16 @@ class BerryShare {
   std::string casting_name_;
   std::string answer_;
   char *sdp_; 
+  uint32_t video_rtp_ssrc_;
+  uint32_t audio_rtp_ssrc_;
 
   GCond cond_;
   GMutex mutex_;
 
-  OmxPlayer omx_player_;
+  MediaPlayer media_player_;
   RtpDepacketizer rtp_depacketizer_;
 
-  peer_connection_t *peer_connection_;
+  PeerConnection *peer_connection_;
 };
 
 #endif // BERRY_SHARE_H_

@@ -48,7 +48,7 @@ console.log(sdp);
       }
     }
 
-    navigator.mediaDevices.getDisplayMedia({ video: true, audio: false })
+    navigator.mediaDevices.getDisplayMedia({ video: true, audio: true })
       .then(stream => {
         stream.getTracks().forEach(track => {
 	  this.pc.addTrack(track, stream);
