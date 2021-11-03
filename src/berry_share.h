@@ -6,9 +6,7 @@
 #include "rtp_depacketizer.h"
 #include "media_player.h"
 
-extern "C" {
-#include "pear.h"
-}
+#include "peer_connection.h"
 
 class BerryShare {
 

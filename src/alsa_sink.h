@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
-#include <pthread.h>
+#include <thread>
 #include <alsa/asoundlib.h>
 
 #include "media_sink.h"
@@ -15,7 +15,7 @@ class AlsaSink : public MediaSink {
 
   AlsaSink();
   ~AlsaSink();
-  static void* Playback(void *data);
+  static void Playback(void *context);
 
   int Play();
   void Pause();
@@ -29,8 +29,8 @@ class AlsaSink : public MediaSink {
   snd_pcm_hw_params_t *pcm_hw_params_;
   snd_pcm_uframes_t pcm_frames_;
 
-  pthread_mutex_t mutex_;
-  pthread_t tid_;
+  std::thread playback_thread_;
+
   bool playback_;
 
 };

@@ -17,6 +17,7 @@ RtpDepacketizer::RtpDepacketizer() {
   audio_handler_.packet = RtpDepacketizer::DecodeAudioPacket;
   audio_decoder_ = rtp_payload_decode_create(8, "PCMA", &audio_handler_, this);
 
+  pc_ = NULL;
 }
 
 RtpDepacketizer::~RtpDepacketizer() {
@@ -63,25 +64,40 @@ int RtpDepacketizer::DecodeAudioPacket(void* param, const void *packet, int byte
 int RtpDepacketizer::DecodeVideoPacket(void* param, const void *packet, int bytes, uint32_t timestamp, int flags) {
 
   RtpDepacketizer *rtp_depacketizer = (RtpDepacketizer*)param;
+  PeerConnection *pc = rtp_depacketizer->pc_;
   uint8_t *data = (uint8_t*)packet;
 
+  static int gop = 0;
   static uint8_t nalu_header[] = {0x00, 0x00, 0x00, 0x01};
   static uint8_t header[32] = {0};
 
-  if(data[0] == 0x67) {
-    if(memcmp(header, packet, bytes) != 0) {
-      SPDLOG_INFO("SPS/PPS changed. Restart player\n");
-      //for(int i = 0; i < 8; i++) {
-      //  printf("%.2X ", ((uint8_t*)(packet))[i]);
-      //}
-      //printf("\n");
-      memset(header, 0, sizeof(header));
-      memcpy(header, packet, bytes);
-      rtp_depacketizer->media_player_->Pause(MediaType::kMediaVideo);
-      rtp_depacketizer->media_player_->Play(MediaType::kMediaVideo);
-    }
-  }
+  switch(data[0]) {
+    case 0x67:
+      if(memcmp(header, packet, bytes) != 0) {
+        SPDLOG_INFO("SPS/PPS changed. Restart player");
 
+        memset(header, 0, sizeof(header));
+        memcpy(header, packet, bytes);
+        rtp_depacketizer->media_player_->Pause(MediaType::kMediaVideo);
+        rtp_depacketizer->media_player_->Play(MediaType::kMediaVideo);
+      }
+      break;
+    case 0x68:
+      break;
+    default:
+      gop++;
+      if(gop%60 == 0) {
+        peer_connection_send_rtcp_pil(pc, rtp_depacketizer->video_rtp_ssrc_);
+	gop = 0;
+      }
+      break;
+  }
+#if 0
+      for(int i = 0; i < 8; i++) {
+        printf("%.2X ", ((uint8_t*)(packet))[i]);
+      }
+      printf("\n");
+#endif
   rtp_depacketizer->media_player_->WriteMediaBuffer(nalu_header, sizeof(nalu_header), MediaType::kMediaVideo);
   rtp_depacketizer->media_player_->WriteMediaBuffer(data, bytes, MediaType::kMediaVideo);
 

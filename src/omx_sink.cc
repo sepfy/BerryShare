@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <pthread.h>
 #include <spdlog/spdlog.h>
 #include <bcm_host.h>
 
@@ -135,21 +134,21 @@ int OmxSink::Init() {
 void OmxSink::Pause() {
 
   playback_ = false;
-  pthread_join(tid_, NULL);
+  playback_thread_.join();
 }
 
 int OmxSink::Play() {
 
   playback_ = true;
-  pthread_create(&tid_, NULL, OmxSink::Playback, this);
+  playback_thread_ = std::thread(OmxSink::Playback, this);
 
   return 0;
 }
 
 
-void* OmxSink::Playback(void *data) {
+void OmxSink::Playback(void *context) {
 
-  OmxSink *omx_sink = (OmxSink*)data;
+  OmxSink *omx_sink = (OmxSink*)context;
  
   unsigned int data_len = 0;
   if(omx_sink->Init() != -1) {

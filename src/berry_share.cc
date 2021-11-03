@@ -1,4 +1,5 @@
 #include <iostream>
+#include <chrono>
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
 
@@ -57,7 +58,7 @@ std::string BerryShare::GetStatus() {
 
 void BerryShare::Init() {
 
-  spdlog::set_pattern("[%H:%M:%S][%@] %v");
+  spdlog::set_pattern("[%H:%M:%S][%@][%l] %v");
   rtp_depacketizer_.set_media_player(&media_player_);
 }
 
@@ -88,12 +89,41 @@ void BerryShare::OnTrack(uint8_t *packet, size_t bytes, void *data) {
   RtpDepacketizer *rtp_depacketizer = &berry_share->rtp_depacketizer_;
 
   uint32_t ssrc = 0;
-  ssrc = ((uint32_t)packet[8] << 24) | ((uint32_t)packet[9] << 16) | ((uint32_t)packet[10] << 8) | ((uint32_t)packet[11]);
+  ssrc = (((uint32_t)packet[8]) << 24) | (((uint32_t)packet[9]) << 16) | (((uint32_t)packet[10]) << 8) | ((uint32_t)packet[11]);
+
+  static uint64_t audio_bitrate = 0;
+  static uint64_t video_bitrate = 0;
+  static auto audio_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+  static auto video_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+  auto current_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+
   if(ssrc == berry_share->audio_rtp_ssrc_) {
+
     rtp_depacketizer->DepacketAudio(packet, bytes);
+
+    audio_bitrate += bytes*8;
+    if(audio_bitrate > 1000000UL) {
+      SPDLOG_INFO("Audio({}) bitrate: {} bps.", berry_share->audio_rtp_ssrc_,
+       (double)(audio_bitrate)/(double)(current_ms - audio_ms));
+      audio_bitrate = 0;
+      audio_ms = current_ms;
+    }
   }
   else if(ssrc == berry_share->video_rtp_ssrc_) {
+
+    uint32_t rtcp_ssrc;
+    memcpy(&rtcp_ssrc, packet + 8, 4);
+    rtp_depacketizer->set_video_rtp_ssrc(rtcp_ssrc);
     rtp_depacketizer->DepacketVideo(packet, bytes);
+
+    video_bitrate += bytes*8;
+    if(video_bitrate > 10000000UL) {
+      SPDLOG_INFO("Video({}) bitrate: {} bps", berry_share->video_rtp_ssrc_,
+       (double)(video_bitrate)/(double)(current_ms - video_ms));
+      video_bitrate = 0;
+      video_ms = current_ms;
+    }
+
   }
 }
 
@@ -132,6 +162,8 @@ char* BerryShare::SetOffer(char *offer, void *data) {
   peer_connection_onicecandidate(peer_connection_, (void*)BerryShare::OnIcecandidate, this);
   peer_connection_oniceconnectionstatechange(peer_connection_, (void*)&BerryShare::OnIceconnectionstatechange, this);
   peer_connection_create_answer(peer_connection_);
+
+  rtp_depacketizer_.set_peer_connection(peer_connection_);
 
   g_cond_wait(&cond_, &mutex_);
   peer_connection_set_remote_description(peer_connection_, offer);

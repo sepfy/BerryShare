@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <pthread.h>
 #include <alsa/asoundlib.h>
 #include <spdlog/spdlog.h>
 
@@ -66,22 +65,23 @@ int AlsaSink::Init() {
 void AlsaSink::Pause() {
 
   playback_ = false;
-  pthread_join(tid_, NULL);
+  playback_thread_.join();
+
 }
 
 int AlsaSink::Play() {
 
   playback_ = true;
-  pthread_create(&tid_, NULL, AlsaSink::Playback, this);
+  playback_thread_ = std::thread(AlsaSink::Playback, this);
 
   return 0;
 }
 
 
-void* AlsaSink::Playback(void *data) {
+void AlsaSink::Playback(void *context) {
 
 
-  AlsaSink *alsa_sink = (AlsaSink*)data;
+  AlsaSink *alsa_sink = (AlsaSink*)context;
 
   uint32_t pcm;
   int len;
@@ -102,20 +102,19 @@ void* AlsaSink::Playback(void *data) {
     }
 
     len = alsa_sink->ReadMediaBuffer(buf, buff_size);
-
     if(pcm = snd_pcm_writei(alsa_sink->pcm_handle_, buf, len) == -EPIPE) {
-      //SPDLOG_WARN("XRUN.");
-      usleep(1000);
+      SPDLOG_WARN("overrun.");
       snd_pcm_prepare(alsa_sink->pcm_handle_);
     }
     else if(pcm < 0) {
-      printf("ERROR. Can't write to PCM device. %s\n", snd_strerror(pcm));
+      SPDLOG_ERROR("ERROR. Can't write to PCM device. %s\n", snd_strerror(pcm));
     }
   }
 
   if(buf)
     free(buf);
+
   alsa_sink->Deinit();
-  pthread_exit(NULL);
+
 }
 

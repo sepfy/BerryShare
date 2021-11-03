@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
-#include <pthread.h>
+#include <thread>
 
 #include "media_sink.h"
 
@@ -19,7 +19,7 @@ class OmxSink : public MediaSink {
 
   OmxSink();
   ~OmxSink();
-  static void* Playback(void *data);
+  static void Playback(void *context);
 
   int Play();
   void Pause();
@@ -29,8 +29,8 @@ class OmxSink : public MediaSink {
   int Init();
   void Deinit();
 
-  pthread_mutex_t mutex_;
-  pthread_t tid_;
+  std::thread playback_thread_;
+
   bool playback_;
 
   // OMX stack
