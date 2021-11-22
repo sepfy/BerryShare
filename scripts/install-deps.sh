@@ -13,7 +13,7 @@ cd cmake
 cmake ..
 make
 
-cd $BASE_PATH/third_party/userland/host_applications/linux/apps/hello_pi/libs/ilclient/
+cd /opt/vc/src/hello_pi/libs/ilclient/
 
 make
 sudo cp libilclient.a /usr/lib/
