@@ -9,7 +9,7 @@
 #include <websocketpp/config/asio.hpp>
 #include <websocketpp/server.hpp>
 
-#include "berry_share.h"
+#include "webrtc_connection.h"
 
 using websocketpp::lib::placeholders::_1;
 using websocketpp::lib::placeholders::_2;
@@ -22,8 +22,9 @@ class SignalService {
   typedef websocketpp::connection_hdl connection_hdl;
   typedef websocketpp::server<websocketpp::config::asio_tls> server;
   void Run();
+  void Shutdown();
 
-  SignalService(std::shared_ptr<BerryShare> &berry_share);
+  SignalService(std::shared_ptr<WebrtcConnection> &webrtc_connection);
   
  private:
 
@@ -37,7 +38,7 @@ class SignalService {
 
   con_list connections_;
   server endpoint_;
-  std::shared_ptr<BerryShare> berry_share_;
+  std::shared_ptr<WebrtcConnection> webrtc_connection_;
 };
 
 #endif // SIGNAL_SERVICE_H_

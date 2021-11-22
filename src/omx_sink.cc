@@ -134,7 +134,8 @@ int OmxSink::Init() {
 void OmxSink::Pause() {
 
   playback_ = false;
-  playback_thread_.join();
+  if(playback_thread_.joinable())
+    playback_thread_.join();
 }
 
 int OmxSink::Play() {

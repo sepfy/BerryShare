@@ -17,7 +17,6 @@ AlsaSink::~AlsaSink() {
 }
 
 void AlsaSink::Deinit() {
-
   snd_pcm_drain(pcm_handle_);
   snd_pcm_close(pcm_handle_);
 }
@@ -65,7 +64,8 @@ int AlsaSink::Init() {
 void AlsaSink::Pause() {
 
   playback_ = false;
-  playback_thread_.join();
+  if(playback_thread_.joinable())
+    playback_thread_.join();
 
 }
 
@@ -79,7 +79,6 @@ int AlsaSink::Play() {
 
 
 void AlsaSink::Playback(void *context) {
-
 
   AlsaSink *alsa_sink = (AlsaSink*)context;
 

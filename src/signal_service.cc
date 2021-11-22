@@ -2,6 +2,7 @@
 #include <fstream>
 #include <iostream>
 #include <set>
+#include <spdlog/spdlog.h>
 #include <websocketpp/config/asio.hpp>
 #include <websocketpp/server.hpp>
 #include <nlohmann/json.hpp>
@@ -14,7 +15,7 @@ const std::string kTlsKeyPath = "/etc/berry-share/key.pem";
 const std::string kTlsCertPath = "/etc/berry-share/cert.pem";
 const std::string kDocRoot = "/etc/berry-share/dist/";
 
-SignalService::SignalService(std::shared_ptr<BerryShare> &berry_share) {
+SignalService::SignalService(std::shared_ptr<WebrtcConnection> &webrtc_connection) {
 
   endpoint_.clear_access_channels(websocketpp::log::alevel::all);
   endpoint_.clear_error_channels(websocketpp::log::elevel::all);
@@ -27,18 +28,18 @@ SignalService::SignalService(std::shared_ptr<BerryShare> &berry_share) {
   endpoint_.set_tls_init_handler(websocketpp::lib::bind(&SignalService::OnTlsInit, ::_1));
   endpoint_.set_reuse_addr(true);
 
-  berry_share_ = berry_share;
+  webrtc_connection_ = webrtc_connection;
 }
 
 void SignalService::OnOpen(connection_hdl hdl) {
   connections_[hdl] = "";
-  endpoint_.send(hdl, berry_share_->GetStatus(), websocketpp::frame::opcode::text);
+  endpoint_.send(hdl, webrtc_connection_->GetStatus(), websocketpp::frame::opcode::text);
 }
 
 void SignalService::OnClose(connection_hdl hdl) {
   printf("Close %s\n", connections_[hdl].c_str());
-  if(connections_[hdl] == berry_share_->casting_name()) {
-    berry_share_->StopCasting();
+  if(connections_[hdl] == webrtc_connection_->casting_name()) {
+    webrtc_connection_->StopCasting();
   }
   connections_.erase(hdl);
 }
@@ -52,14 +53,13 @@ websocketpp::lib::shared_ptr<ssl_context> SignalService::OnTlsInit(connection_hd
 }
 
 void SignalService::OnMessage(connection_hdl hdl, websocketpp::config::asio::message_type::ptr msg) {
-
-  auto response = berry_share_->Request(msg->get_payload());
+  auto response = webrtc_connection_->Request(msg->get_payload());
   endpoint_.send(hdl, response, websocketpp::frame::opcode::text);
 
   auto j = json::parse(msg->get_payload());
   connections_[hdl] = j["name"];
 
-  auto status = berry_share_->GetStatus();
+  auto status = webrtc_connection_->GetStatus();
   for(auto it : connections_) {
     endpoint_.send(it.first, status, websocketpp::frame::opcode::text);
   }
@@ -114,6 +114,12 @@ void SignalService::OnHttp(connection_hdl hdl) {
   con->set_body(response);
   con->set_status(websocketpp::http::status_code::ok);
   
+}
+
+void SignalService::Shutdown() {
+
+  endpoint_.stop_listening();
+  endpoint_.stop();
 }
 
 void SignalService::Run() {

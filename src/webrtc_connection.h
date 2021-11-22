@@ -1,5 +1,5 @@
-#ifndef BERRY_SHARE_H_
-#define BERRY_SHARE_H_
+#ifndef WEBRTC_CONNECTION_H_
+#define WEBRTC_CONNECTION_H_
 
 #include <memory>
 #include <string>
@@ -8,11 +8,11 @@
 
 #include "peer_connection.h"
 
-class BerryShare {
+class WebrtcConnection {
 
  public:
-  BerryShare();
-  ~BerryShare();
+  WebrtcConnection();
+  ~WebrtcConnection();
   void Init();
   void Deinit();
 
@@ -45,4 +45,4 @@ class BerryShare {
   PeerConnection *peer_connection_;
 };
 
-#endif // BERRY_SHARE_H_
+#endif // WEBRTC_CONNECTION_H_
