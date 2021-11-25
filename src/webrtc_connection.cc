@@ -10,7 +10,7 @@ using json = nlohmann::json;
 
 WebrtcConnection::WebrtcConnection() {
   is_available_ = true;
-  sdp_ = NULL;
+  answer_ = NULL;
   video_rtp_ssrc_ = 0;
   audio_rtp_ssrc_ = 0;
 }
@@ -68,7 +68,6 @@ void WebrtcConnection::Init() {
 void WebrtcConnection::OnIceconnectionstatechange(IceConnectionState state, void *data) {
   WebrtcConnection *webrtc_connection = (WebrtcConnection*)data;
   if(state == FAILED) {
-    printf("Disconnect with browser... Stop streaming\n");
   }
 }
 
@@ -76,10 +75,12 @@ void WebrtcConnection::OnIcecandidate(char *sdp, void *data) {
 
   WebrtcConnection *webrtc_connection = (WebrtcConnection*)data;
 
-  if(webrtc_connection->sdp_)
-    g_free(webrtc_connection->sdp_);
+  if(webrtc_connection->answer_)
+    g_free(webrtc_connection->answer_);
 
-  webrtc_connection->sdp_ = g_base64_encode((const guchar*)sdp, strlen(sdp));
+  char answer[4096] = {0};
+  snprintf(answer, sizeof(answer), "{\"type\": \"answer\", \"sdp\": \"%s\"}", sdp);
+  webrtc_connection->answer_ = g_base64_encode((const guchar*)answer, strlen(answer));
   g_cond_signal(&webrtc_connection->cond_);
 
 }
@@ -95,9 +96,9 @@ void WebrtcConnection::OnTrack(uint8_t *packet, size_t bytes, void *data) {
 
   static uint64_t audio_bitrate = 0;
   static uint64_t video_bitrate = 0;
-  static auto audio_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-  static auto video_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-  auto current_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+  static auto audio_sec = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+  static auto video_sec = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+  auto current_sec = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
   if(ssrc == webrtc_connection->audio_rtp_ssrc_) {
 
@@ -105,10 +106,10 @@ void WebrtcConnection::OnTrack(uint8_t *packet, size_t bytes, void *data) {
 
     audio_bitrate += bytes*8;
     if(audio_bitrate > 1000000UL) {
-      SPDLOG_INFO("Audio({}) bitrate: {} bps.", webrtc_connection->audio_rtp_ssrc_,
-       (double)(audio_bitrate)/(double)(current_ms - audio_ms));
+      SPDLOG_INFO("Audio({}) bitrate: {:.2f} bps.", webrtc_connection->audio_rtp_ssrc_,
+       (double)(audio_bitrate)/(double)(current_sec - audio_sec));
       audio_bitrate = 0;
-      audio_ms = current_ms;
+      audio_sec = current_sec;
     }
   }
   else if(ssrc == webrtc_connection->video_rtp_ssrc_) {
@@ -120,10 +121,10 @@ void WebrtcConnection::OnTrack(uint8_t *packet, size_t bytes, void *data) {
 
     video_bitrate += bytes*8;
     if(video_bitrate > 10000000UL) {
-      SPDLOG_INFO("Video({}) bitrate: {} bps", webrtc_connection->video_rtp_ssrc_,
-       (double)(video_bitrate)/(double)(current_ms - video_ms));
+      SPDLOG_INFO("Video({}) bitrate: {:.2f} Mbps", webrtc_connection->video_rtp_ssrc_,
+       (double)(video_bitrate)/(double)(current_sec - video_sec)/1000000.0);
       video_bitrate = 0;
-      video_ms = current_ms;
+      video_sec = current_sec;
     }
 
   }
@@ -139,10 +140,6 @@ char* WebrtcConnection::SetOffer(char *offer, void *data) {
 
   video_rtp_ssrc_ = session_description_find_ssrc("video", (char*)decoded_sdp);
   audio_rtp_ssrc_ = session_description_find_ssrc("audio", (char*)decoded_sdp);
-
-  if(decoded_sdp)
-    g_free(decoded_sdp);
-
   SPDLOG_INFO("Get offer. RTP video ssrc = {}, audio ssrc = {}", video_rtp_ssrc_, audio_rtp_ssrc_);
 
   if(peer_connection_)
@@ -169,9 +166,13 @@ char* WebrtcConnection::SetOffer(char *offer, void *data) {
   rtp_depacketizer_.set_peer_connection(peer_connection_);
 
   g_cond_wait(&cond_, &mutex_);
-  peer_connection_set_remote_description(peer_connection_, offer);
+  peer_connection_set_remote_description(peer_connection_, (char*)decoded_sdp);
+
+  if(decoded_sdp)
+    g_free(decoded_sdp);
+
   g_mutex_unlock(&mutex_);
 
-  return sdp_;
+  return answer_;
 }
 

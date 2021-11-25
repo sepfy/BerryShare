@@ -10,6 +10,7 @@
 std::shared_ptr<SignalService> g_signal_service;
 
 static void SignalHandler(int signal) {
+
   SPDLOG_INFO("shutdown");
   g_signal_service->Shutdown(); 
 }

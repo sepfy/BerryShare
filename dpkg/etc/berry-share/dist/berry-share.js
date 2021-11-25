@@ -41,7 +41,6 @@ class BerryShare {
       if(event.candidate === null) {
 
 	let sdp = this.pc.localDescription.sdp;
-console.log(sdp);
         let offer = '{"type": "offer", "sdp":"' + btoa(sdp) + '", "name": "' + this.castingName + '"}';
         this.ws.send(offer);
         document.getElementById('info').innerHTML = 'BerryShare: Prepare to cast';

@@ -31,8 +31,7 @@ class WebrtcConnection {
 
   bool is_available_;
   std::string casting_name_;
-  std::string answer_;
-  char *sdp_; 
+  char *answer_;
   uint32_t video_rtp_ssrc_;
   uint32_t audio_rtp_ssrc_;
 
