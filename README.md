@@ -4,14 +4,14 @@ Share your PC desktop to Raspberry Pi with WebRTC.
 
 ![Webp net-gifmaker](https://user-images.githubusercontent.com/22016807/141047271-cb32cde9-9457-4e25-8f54-e8a903a8ccfe.gif)
 
-### Procedure
+### Getting 
 
 * Install the latest version of RaspiOS image (Lite or with desktop).
 * Connect monitor with HDMI cable, boot up Raspberry Pi and configure network.
-* Install BerryShare application:
+* Download <b>berry-share_\<version\>.deb</b> to Raspberry Pi
+* Install BerryShare package
 ```
-$ wget https://github.com/sepfy/BerryShare/
-$ sudo dpkg -i berry-share_<version>.deb
+$ sudo apt install ./berry-share_<version>.deb
 $ sudo systemctl start berry-share
 ```
 * Open Chrome on your PC and enter the URL https://\<your raspberry pi ip\>:30001
@@ -59,3 +59,4 @@ $ ./scripts/create-dpkg.sh
 * Only support PC, no mobile.
 * Only support Chrome.
 * Only entire screen, no chrome tab.
+

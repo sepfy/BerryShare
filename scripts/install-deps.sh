@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-sudo apt install -y libboost-system-dev nlohmann-json-dev libspdlog-dev libwebsocketpp-dev cmake libglib2.0-dev libssl-dev ninja-build python3-pip
+sudo apt install -y libasound2-dev libboost-system-dev nlohmann-json-dev libspdlog-dev libwebsocketpp-dev cmake libglib2.0-dev libssl-dev ninja-build python3-pip
 sudo pip3 install meson
 
 BASE_PATH=$(pwd)
